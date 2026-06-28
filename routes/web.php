@@ -105,8 +105,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Route::resource('locations',LocationController::class)->except(['create', 'edit']);
 // Route::resource('manufacturers',ManufacturerController::class)->except(['create', 'edit']);
 
-Route::post('/login', [LoginController::class, 'login'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+// Route::post('/login', [LoginController::class, 'login'])
+//    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 require __DIR__.'/settings.php';
 
