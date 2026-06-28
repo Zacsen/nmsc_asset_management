@@ -1,0 +1,141 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Asset;
+use Illuminate\Http\Request;
+use App\Http\Requests\StoreAssetRequest;
+use App\Http\Requests\UpdateAssetRequest;
+use Illuminate\Support\Facades\Log;
+use App\Http\Resources\AssetResource;
+use App\Models\Manufacturer;
+use App\Models\User;
+use App\Models\Location;
+use App\Models\Category;
+
+class AssetController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+
+        $categories = Category::orderBy('name', 'asc')->get(['id','name']);
+        $locations = Location::orderBy('name', 'asc')->get(['id','name']);
+        $manufacturers = Manufacturer::orderBy('name', 'asc')->get(['id','name']);
+        $users = User::orderBy('name', 'asc')->get(['id','name']);
+
+
+        return inertia('Assets/Index', [
+            'categories' => $categories,
+            'locations' => $locations,
+            'manufacturers' => $manufacturers,
+            'users' => $users, ]
+        );
+    }
+
+
+    public function list(Request $request)
+    {
+        $query = Asset::query();
+
+        if ($request->has('searchtext') && !empty($request->input('searchtext'))) {
+            $search = $request->input('searchtext');
+            $query
+                ->whereLike('name', '%'.$search.'%');
+        }
+
+        if ($request->has('sort_field') && $request->has('sort_direction')) {
+            $query->orderBy($request->input('sort_field'), $request->input('sort_direction'));
+        } else {
+            $query->orderBy('name', 'asc'); // Default sorting
+        }
+
+        $assets = AssetResource::collection(
+            $query->orderBy('name', 'asc')->paginate($request->input('per_page', 5))
+        );
+
+        
+        return $assets;
+    }
+
+
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreAssetRequest $request)
+    {
+        $validatedData = $request->validated();
+
+        $asset = Asset::create($validatedData);
+
+        return response()->json([
+            'message' => 'Asset created successfully!',
+            'asset' => $asset // Optionally return the created asset data
+        ], 201); // 201 Created status code
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Asset $asset)
+    {
+        $asset = Asset::with(['category', 'location', 'manufacturer', 'assignedTo'])->findOrFail($asset->id);
+
+        if (!$asset) {
+            return redirect()->back()->with('error', 'Asset not found.');
+        }
+
+        return response()->json($asset);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateAssetRequest $request, Asset $asset)
+    {
+        try {
+            $validatedData = $request->validated();
+
+            Log::info('UpdateAssetRequest validated data:', $validatedData);
+
+            $asset->update($validatedData);
+
+            return response()->json([
+                'message' => 'Asset updated successfully!',
+                'asset' => $asset->fresh()
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Log the exact error
+            Log::error('Update error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return detailed error to Postman
+            return response()->json([
+                'error' => 'Update failed',
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Asset $asset)
+    {
+        try {
+            $asset = Asset::findOrFail($asset->id); // Find the asset or throw a 404 error
+            $asset->delete(); // Delete the asset
+
+            return response()->json(['message' => 'Asset deleted successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to delete asset.'], 500);
+        }
+    }
+}
