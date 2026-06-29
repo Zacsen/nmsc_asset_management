@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, ChartColumnStacked, Compass, Folder, LaptopMinimalCheck, LayoutGrid, MapPin, Wrench } from 'lucide-vue-next';
+import { BookOpen, ChartColumnStacked, Compass, Folder, LaptopMinimalCheck, LayoutGrid, MapPin, Wrench, BrainCircuit } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { computed } from 'vue';
 
@@ -56,11 +56,18 @@ const mainNavItems: NavItem[] = [
     },
 
     {
+        title: 'AI Assistant',
+        href: '/ai-assistant',
+        icon: BrainCircuit,
+        roles: ['admin', 'inventory_user', 'inventory_manager'],
+    },
+
+    /*{
         title: 'Navigation',
         href: '/navigation',
         icon: Compass,
         roles: ['admin', 'inventory_user', 'inventory_manager'],
-    },
+    },*/
 
 ];
 

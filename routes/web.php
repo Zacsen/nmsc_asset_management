@@ -10,6 +10,7 @@ use App\Http\Controllers\NavigationController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\AIChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,25 @@ Route::get('/main', function () {
     return 'Hello World';
 });
 
+/*
+|--------------------------------------------------------------------------
+| AI Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'verified',
+    'role:admin,inventory_user,inventory_manager'
+])->group(function () {
+
+    Route::get('/ai-assistant', [AIChatController::class, 'index'])
+        ->name('ai-assistant.index');
+
+    Route::post('/ai-assistant/chat', [AIChatController::class, 'chat'])
+        ->name('ai-assistant.chat');
+
+});
 
 /*
 |--------------------------------------------------------------------------
