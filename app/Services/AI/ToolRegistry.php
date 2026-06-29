@@ -9,6 +9,7 @@ use App\Services\AI\Tools\SearchAssetsTool;
 use App\Services\AI\Tools\SearchLocationTool;
 use App\Services\AI\Tools\StatisticsTool;
 use App\Services\AI\Tools\AITool;
+use App\Services\AI\Tools\GreetingTool;
 
 class ToolRegistry
 {
@@ -16,6 +17,7 @@ class ToolRegistry
 
     public function __construct(
         CountAssetsTool $countAssets,
+        GreetingTool $greeting,
         CountCategoriesTool $countCategories,
         ManufacturerTool $manufacturer,
         SearchAssetsTool $searchAssets,
@@ -24,6 +26,7 @@ class ToolRegistry
     ) {
         $this->tools = [
             $countAssets->name() => $countAssets,
+            $greeting->name() => $greeting,
             $countCategories->name() => $countCategories,
             $manufacturer->name() => $manufacturer,
             $searchAssets->name() => $searchAssets,

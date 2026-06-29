@@ -1,128 +1,277 @@
-    <script setup lang="ts">
-    import { ref } from "vue";
-    import AppLayout from "@/layouts/AppLayout.vue";
-    import axios from 'axios';
-    import { nextTick } from "vue";
+<script setup lang="ts">
+import { ref, nextTick } from "vue";
+import axios from "axios";
 
-    const messages = ref([
-        {
-            role: "assistant",
-            content: "Hello! How can I help you with your assets today?"
-        }
-    ]);
+import AppLayout from "@/layouts/AppLayout.vue";
 
-    const userMessage = ref("");
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
-    const loading = ref(false);
+interface ChatMessage {
+    role: "assistant" | "user";
+    content: string;
+}
 
-    const sendMessage = async () => {
+const messages = ref<ChatMessage[]>([
+    {
+        role: "assistant",
+        content: "Hello! 👋 How can I help you with your assets today?"
+    }
+]);
 
-        if (!userMessage.value.trim()) return;
+const userMessage = ref("");
 
-        const question = userMessage.value;
+const loading = ref(false);
 
-        // Show user's message immediately
-        messages.value.push({
-            role: "user",
-            content: question
+const chatContainer = ref<any>(null);
+
+const scrollToBottom = async () => {
+    await nextTick();
+
+    const viewport =
+        chatContainer.value?.$el?.querySelector(
+            "[data-radix-scroll-area-viewport]"
+        );
+
+    if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+    }
+};
+
+const sendMessage = async () => {
+
+    if (!userMessage.value.trim()) return;
+
+    const question = userMessage.value;
+
+    messages.value.push({
+        role: "user",
+        content: question
+    });
+
+    userMessage.value = "";
+
+    await scrollToBottom();
+
+    loading.value = true;
+
+    try {
+
+        const response = await axios.post("/ai-assistant/chat", {
+            message: question
         });
 
-        userMessage.value = "";
+        messages.value.push({
+            role: "assistant",
+            content: response.data.reply
+        });
 
-        loading.value = true;
+    } catch (error) {
 
-        try {
+        console.error(error);
 
-            const response = await axios.post("/ai-assistant/chat", {
-                message: question
-            });
+        messages.value.push({
+            role: "assistant",
+            content: "Sorry, something went wrong."
+        });
 
-            messages.value.push({
-                role: "assistant",
-                content: response.data.reply
-            });
-
-        } catch (error) {
-
-            messages.value.push({
-                role: "assistant",
-                content: "Sorry, something went wrong."
-            });
-            await nextTick();
-            console.error(error);
-
-        }
+    } finally {
 
         loading.value = false;
-    };
 
-    </script>
+        await scrollToBottom();
 
-    <template>
+    }
 
-    <AppLayout>
+};
+</script>
 
-    <div class="flex flex-col h-[85vh]">
+<template>
 
-        <div class="border-b p-4">
-            <h1 class="text-2xl font-bold">
-                AI Assistant
-            </h1>
-        </div>
+<AppLayout>
 
-        <div class="flex-1 overflow-y-auto p-6">
+<div class="flex justify-center">
+
+<Card class="w-full h-[85vh] flex flex-col">
+
+    <!-- Header -->
+
+    <CardHeader>
+
+        <CardTitle class="flex items-center gap-2">
+
+            🤖 AI Assistant
+
+        </CardTitle>
+
+        <p class="text-sm text-muted-foreground">
+
+            Ask anything about your asset inventory.
+
+        </p>
+
+    </CardHeader>
+
+    <Separator />
+
+    <!-- Chat -->
+
+    <CardContent class="flex-1 overflow-hidden p-0">
+
+        <ScrollArea
+            ref="chatContainer"
+            class="h-full px-6 py-5"
+        >
 
             <div
                 v-for="(message,index) in messages"
                 :key="index"
-                class="mb-4"
+                class="flex mb-5"
+                :class="message.role === 'user'
+                    ? 'justify-end'
+                    : 'justify-start'"
             >
 
                 <div
-                    :class="[
-                        message.role === 'user'
-                        ? 'text-right'
-                        : 'text-left'
-                    ]"
+                    class="flex gap-3 items-start max-w-[80%]"
+                    :class="message.role === 'user'
+                        ? 'flex-row-reverse'
+                        : ''"
                 >
 
-                    {{ message.content }}
+                    <!-- Avatar -->
+
+                    <Avatar>
+
+                        <AvatarFallback>
+
+                            {{ message.role === 'assistant' ? '🤖' : 'You' }}
+
+                        </AvatarFallback>
+
+                    </Avatar>
+
+                    <!-- Bubble -->
+
+                    <div
+
+                        class="rounded-2xl px-4 py-3 whitespace-pre-wrap break-words shadow-sm"
+
+                        :class="message.role === 'user'
+
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+
+                            : 'bg-muted border border-border rounded-bl-md'"
+
+                    >
+
+                        <div
+                            class="text-xs font-semibold opacity-70 mb-2"
+                        >
+
+                            {{ message.role === 'assistant'
+                                ? 'AI Assistant'
+                                : 'You'
+                            }}
+
+                        </div>
+
+                        {{ message.content }}
+
+                    </div>
 
                 </div>
 
             </div>
 
+            <!-- Thinking -->
+
             <div
                 v-if="loading"
-                class="text-left italic text-gray-500"
+                class="flex justify-start"
             >
-                🤖 Thinking...
+
+                <div class="flex gap-3">
+
+                    <Avatar>
+
+                        <AvatarFallback>
+
+                            🤖
+
+                        </AvatarFallback>
+
+                    </Avatar>
+
+                    <div
+                        class="bg-muted border border-border rounded-2xl rounded-bl-md px-4 py-3 italic animate-pulse"
+                    >
+
+                        Thinking...
+
+                    </div>
+
+                </div>
+
             </div>
 
-        </div>
+        </ScrollArea>
 
-        <div class="border-t p-4 flex gap-3">
+    </CardContent>
 
-            <input
+    <Separator />
+
+    <!-- Input -->
+
+    <div class="p-4">
+
+        <div class="flex gap-3">
+
+            <Input
+
                 v-model="userMessage"
+
                 @keyup.enter="sendMessage"
+
                 :disabled="loading"
-                class="border rounded-lg flex-1 px-4 py-3"
-                placeholder="Ask something..."
+
+                placeholder="Ask about assets, categories, locations..."
+
+            />
+
+            <Button
+
+                @click="sendMessage"
+
+                :disabled="loading"
+
             >
 
-            <button  @click="sendMessage"
-                    :disabled="loading"
-                    class="bg-black text-white px-5 rounded-lg disabled:opacity-50"
-                >
-                    {{ loading ? "Thinking..." : "Send" }}
+                {{ loading ? "Thinking..." : "Send" }}
 
-            </button>
+            </Button>
 
         </div>
+
+        <p class="mt-3 text-xs text-muted-foreground">
+
+            Try asking:
+            <strong>"How many assets are there?"</strong>,
+            <strong>"Show all Desktop PCs"</strong>,
+            <strong>"Which manufacturer has the most assets?"</strong>
+
+        </p>
 
     </div>
 
-    </AppLayout>
+</Card>
 
-    </template>
+</div>
+
+</AppLayout>
+
+</template>
